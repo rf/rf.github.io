@@ -11,7 +11,7 @@ pygments: true
 #
 title: "Russ Frank's Blog"
 tagline: 
-author: Russ Frank
+author:
   name: Russ Frank
   email: russ.frank@rutgers.edu
   github: russfrank
