@@ -5,7 +5,7 @@ title: Hi, I'm Russ.
 {% include JB/setup %}
 
 <div style="float:right;text-align:center">
-<img src="assets/me.jpg" style="padding:0px" class="well" />
+<img src="assets/me.jpg" class="me well" />
 <br>
 <a href="http://twitter.com/#!/russjf" class="zocial icon twitter" style="margin:5px;">twitter</a>
 <a href="http://github.com/russfrank" class="zocial icon github" style="margin:5px;">github</a>
