@@ -22,12 +22,13 @@ some of my `Makefile` rules which should help you automate your build process.
 
 ## Automating the Titanium Build
 
-      ios-app : os-sanity update-rev
-         @echo "Executing Titanium build script for iPhone .."
-         @$(PYTHON) $(IOS_BUILDER) distribute $(IOS_VER) "`pwd`"\
-            $(IOS_ID) $(APP_NAME) $(MOBILEPROVISION) \
-            $(DEVIDENT) "`pwd`/build/iphone/" universal | egrep -v '[DEBUG]'
-{:lang="text"}
+{% highlight make %}
+ios-app : os-sanity update-rev
+   @echo "Executing Titanium build script for iPhone .."
+   @$(PYTHON) $(IOS_BUILDER) distribute $(IOS_VER) "`pwd`"\
+      $(IOS_ID) $(APP_NAME) $(MOBILEPROVISION) \
+      $(DEVIDENT) "`pwd`/build/iphone/" universal | egrep -v '[DEBUG]'
+{% endhighlight %}
 
 This rule assumes that the current directory is a Titanium project (hence the
 `pwd`).  It requires a couple of make variables:
@@ -56,13 +57,14 @@ This will compile a `.app` for you; now, we'll need to sign it to create an
 
 ## Automatic Code Signing
 
-      codesign: 
-         /usr/bin/xcrun -sdk iphoneos PackageApplication -v \
-            "`pwd`/build/iphone/build/Release-iphoneos/$(APP_NAME).app" \
-            -o "`pwd`/build/$(APP_NAME).ipa" \
-            --sign $(DISTRIB_PROFILE) \
-            --embed "`pwd`/build/iphone/build/Release-iphoneos/$(APP_NAME).app/embedded.mobileprovision"
-{:lang="text"}
+{% highlight make %}
+codesign: 
+   /usr/bin/xcrun -sdk iphoneos PackageApplication -v \
+      "`pwd`/build/iphone/build/Release-iphoneos/$(APP_NAME).app" \
+      -o "`pwd`/build/$(APP_NAME).ipa" \
+      --sign $(DISTRIB_PROFILE) \
+      --embed "`pwd`/build/iphone/build/Release-iphoneos/$(APP_NAME).app/embedded.mobileprovision"
+{% endhighlight %}
 
 This rule will use `xcrun` to perform the actual packaging of the app.  Only
 one additional variable is introduced:
@@ -76,10 +78,11 @@ copied to the server which will be distributing your application.
 
 ## Deploying
 
-      deploy:
-         scp build/$(APP_NAME).ipa deploy@server:ipa/$(APP_NAME)-$(GITDESCRIBE).ipa
-         ssh deploy@server ln -fs \~/ipa/$(APP_NAME)-$(GITDESCRIBE).ipa \~/ipa/$(APP_NAME).ipa
-{:lang="text"}
+{% highlight make %}
+deploy:
+   scp build/$(APP_NAME).ipa deploy@server:ipa/$(APP_NAME)-$(GITDESCRIBE).ipa
+   ssh deploy@server ln -fs \~/ipa/$(APP_NAME)-$(GITDESCRIBE).ipa \~/ipa/$(APP_NAME).ipa
+{% endhighlight %}
 
 These two lines simply scp the file over and then symlink your app name to the
 latest version of your app.  `$(GITDESCRIBE)` could be any type of description
@@ -89,8 +92,9 @@ the current checked out revision.
 
 Putting it all together, we have the following rule:
 
-      distribute: ios-app codesign deploy
-{:lang="text"}
+{% highlight make %}
+distribute: ios-app codesign deploy
+{% endhighlight %}
 
 and your latest version is on your server, waiting to be downloaded.
 
@@ -118,29 +122,33 @@ though.
 
 Your `motd.json` may look something like:
 
-      {
-         "version":"v1.0-1-gb25fdee"
-      }
-{:lang="json"}
+{% highlight javascript %}
+{
+   "version":"v1.0-1-gb25fdee"
+}
+{% endhighlight %}
 
 So, we'll write a simple rule to sed this to be the current `$(GITDESCRIBE)`:
 
-      update-motd:
-         ssh deploy@server sed -i\'.bak\' -e \'s/\"version\":\".*\"/\"version\":\"$(GITDESCRIBE)\"/\' public_html/motd.json
-{:lang="text"}
+{% highlight make %}
+update-motd:
+   ssh deploy@server sed -i\'.bak\' -e \'s/\"version\":\".*\"/\"version\":\"$(GITDESCRIBE)\"/\' public_html/motd.json
+{% endhighlight %}
 
 Your client app must also have knowledge of it's current revision.  You can
 do this by creating a `revision.js` file in your `Resources` directory:
 
-      update-rev:
-         @echo 'module.exports = $(GITDESCRIBE);' > Resources/revision.js
-{:lang="text"}
+{% highlight make %}
+update-rev:
+   @echo 'module.exports = $(GITDESCRIBE);' > Resources/revision.js
+{% endhighlight %}
 
 This file can now be `require()`d to obtain the current version.  Now, your
 distribute rule will look like this:
 
-      distribute: update-rev ios-app codesign deploy update-motd
-{:lang="text"}
+{% highlight make %}
+distribute: update-rev ios-app codesign deploy update-motd
+{% endhighlight %}
 
 Lastly, we'll need a bit of Javascript to tie it all together.  We'll need to
 pull `motd.json` from the server, check the version, and `openURL` an
@@ -148,31 +156,48 @@ pull `motd.json` from the server, check the version, and `openURL` an
 very bare; you most likely want to pop up a window informing the user that
 an update is available:
 
-      // update.js
-      function check () {
-         var url = "http://example.com/motd.json",
-             client = Ti.Network.createHTTPClient();
+{% highlight javascript %}
+// update.js
+function check () {
+   var url = "http://example.com/motd.json",
+       client = Ti.Network.createHTTPClient();
 
-         client.onload = function (e) {
-            try {
-               var data = JSON.parse(this.responseText),
-                   version = require('version');
+   client.onload = function (e) {
+      try {
+         var data = JSON.parse(this.responseText),
+             version = require('version');
 
-               if (data.version != version) {
-                  // Actually trigger the update
-                  // This will display the 'example.com wants to install..' box
-                  Ti.Platform.openURL("itms-services://?action=download-manifest&url=https://example.com/App.plist");
-               }
-            } catch (e) {
-               alert('error checking for update');
-            }
-         };
-
-         client.onerror = function (e) {
-            alert('error checking for update');
+         if (data.version != version) {
+            // Actually trigger the update
+            // This will display the 'example.com wants to install..' box
+            Ti.Platform.openURL("itms-services://?action=download-manifest&url=https://example.com/App.plist");
          }
+      } catch (e) {
+         alert('error checking for update');
       }
+   };
 
-      module.exports = check;
-{:lang="javascript"}
+   client.onerror = function (e) {
+      alert('error checking for update');
+   }
+}
 
+module.exports = check;
+{% endhighlight %}
+
+To use this snippet, we'll have to require it elsewhere and invoke the `check()`
+function:
+
+{% highlight javascript %}
+var update = require('update');
+update.check();
+{% endhighlight %}
+
+When the above bit is run, a box will pop up saying 'Developer would like to
+install Application' when an update is available.
+
+This is a great way to quickly deploy to enterprise customers.  You may also
+be able to use a similar method to the above for deploying to beta testers,
+though I have not tested this.
+
+Enjoy & good luck.
