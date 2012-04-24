@@ -18,6 +18,8 @@ I try to do things the Right Way™.
 
 Currently I'm employed by Rutgers University, where I write the Rutgers Mobile app for iPhones, iPads, and Android devices.
 
+Resume: [pdf](assets/resume.pdf)
+
 -------
 
 <ul>{% for post in site.posts %}
