@@ -58,6 +58,7 @@ Titanium template with git:
 
 {% highlight bash %}
 $ git clone https://github.com/russfrank/backbone.ti myproject
+$ cd myproject
 $ git submodule init
 $ git submodule update
 {% endhighlight %}
@@ -65,7 +66,6 @@ $ git submodule update
 Now, try running the project:
 
 {% highlight bash %}
-$ cd myproject
 $ tsm run 2 run --platform=iphone
 {% endhighlight %}
 
