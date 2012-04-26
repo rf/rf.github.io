@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "How Not to Use Titanium Studio"
+title: "How to Not Use Titanium Studio"
 category: 
 tags: []
 ---
