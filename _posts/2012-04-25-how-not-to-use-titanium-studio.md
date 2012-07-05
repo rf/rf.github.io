@@ -7,13 +7,19 @@ tags: []
 {% include JB/setup %}
 
 This is a tutorial for those who are frightened by the bloat of Titanium Studio
-and would rather use the python scripts directly.  It would help if you use my
-tool, `tsm`, to manage your Titanium SDK versions; however, if you'd rather not,
-replace the bottom references to
+and would rather use the python scripts directly.  It would help if [you use my
+tool, `tsm`, to manage your Titanium SDK versions](https://github.com/russfrank/tsm);
+however, if you'd rather not, replace the bottom references to
 
 - `tsm run 2.0.1` with `/path/to/mobilesdk/os/2.0.1/titanium.py`
 - `tsm builder.py 2.0.1 iphone` with `/path/to/mobilesdk/os/2.0.1/iphone/builder.py`
 - `tsm builder.py 2.0.1 android` with `/path/to/mobilesdk/os/2.0.1/android/builder.py`
+
+You can install `tsm` like this:
+
+{% highlight bash %}
+$ npm i -g tsm
+{% endhighlight %}
 
 If you're using `tsm` -- awesome! Grab the latest stable sdk with
 
