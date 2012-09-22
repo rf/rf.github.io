@@ -1,0 +1,511 @@
+<!DOCTYPE html>  <html> <head>   <title>index.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               index.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <h2>tsm</h2>
+
+<p>Titanium SDK manager</p>
+
+<p>This file contains functions for retreiving builds &amp; build metadata from
+Appcelerator.  Tests are in <code>test.js</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;request&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">async</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;async&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">semver</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;semver&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;fs&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;path&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">util</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;util&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">EventEmitter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;events&quot;</span><span class="p">).</span><span class="nx">EventEmitter</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">exec</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;child_process&#39;</span><span class="p">).</span><span class="nx">exec</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">spawn</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;child_process&#39;</span><span class="p">).</span><span class="nx">spawn</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">rimraf</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;rimraf&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">tsm</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">tsm</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h2>Public API</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <h3>install</h3>
+
+<ul>
+<li><code>options</code> object
+<ul><li><code>dir</code> output directory</li>
+<li><code>input</code> git hash or version to match</li>
+<li><code>os</code> os to match, should be 'osx' 'win32' 'linux'</li></ul></li>
+<li><code>done</code> callback, called with <code>(error)</code></li>
+</ul>
+
+<p>Installs a matching SDK to the provided directory. Returns an emitter which
+will emit <code>progress</code> events like <code>{left: 38413, done: 5893, percent: 0.34}</code>,
+<code>debug</code> events and <code>log</code> events.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">install</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">emitter</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+
+  <span class="nx">tsm</span><span class="p">.</span><span class="nx">getAllBuilds</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">input</span><span class="p">,</span> <span class="nx">options</span><span class="p">.</span><span class="nx">os</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">builds</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">builds</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;no matching SDK versions&quot;</span><span class="p">));</span>
+    <span class="kd">var</span> <span class="nx">build</span> <span class="o">=</span> <span class="nx">builds</span><span class="p">.</span><span class="nx">pop</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">total</span> <span class="o">=</span> <span class="nx">build</span><span class="p">.</span><span class="nx">size</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">left</span> <span class="o">=</span> <span class="nx">total</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">dest</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">build</span><span class="p">.</span><span class="nx">filename</span><span class="p">);</span>
+
+    <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;chose&#39;</span><span class="p">,</span> <span class="nx">build</span><span class="p">);</span>
+
+    <span class="kd">var</span> <span class="nx">req</span> <span class="o">=</span> <span class="nx">request</span><span class="p">(</span><span class="nx">build</span><span class="p">.</span><span class="nx">zip</span><span class="p">);</span>
+    <span class="nx">req</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">fs</span><span class="p">.</span><span class="nx">createWriteStream</span><span class="p">(</span><span class="nx">dest</span><span class="p">));</span>
+
+    <span class="nx">req</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+
+    <span class="nx">req</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">buffer</span><span class="p">)</span> <span class="p">{</span> 
+      <span class="nx">left</span> <span class="o">-=</span> <span class="nx">buffer</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+      <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;progress&#39;</span><span class="p">,</span> <span class="p">{</span>
+        <span class="nx">left</span><span class="o">:</span> <span class="nx">left</span><span class="p">,</span> 
+        <span class="nx">done</span><span class="o">:</span> <span class="nx">total</span> <span class="o">-</span> <span class="nx">left</span><span class="p">,</span> 
+        <span class="nx">percent</span><span class="o">:</span> <span class="p">(</span><span class="nx">total</span><span class="o">-</span><span class="nx">left</span><span class="p">)</span> <span class="o">/</span> <span class="nx">total</span>
+      <span class="p">});</span>
+    <span class="p">});</span>
+
+    <span class="nx">req</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+      <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">);</span>
+      <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s2">&quot;complete&quot;</span><span class="p">);</span>
+      <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;downloaded&#39;</span><span class="p">,</span> <span class="p">{</span><span class="nx">dest</span><span class="o">:</span> <span class="nx">dest</span><span class="p">,</span> <span class="nx">dir</span><span class="o">:</span> <span class="nx">dir</span><span class="p">});</span>
+      <span class="nx">tsm</span><span class="p">.</span><span class="nx">unzip</span><span class="p">(</span><span class="nx">dest</span><span class="p">,</span> <span class="nx">dir</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">er</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">er</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">er</span><span class="p">);</span>
+
+        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;extracted&#39;</span><span class="p">,</span> <span class="p">{</span><span class="nx">dest</span><span class="o">:</span> <span class="nx">dest</span><span class="p">});</span>
+        <span class="nx">fs</span><span class="p">.</span><span class="nx">unlink</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">dir</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nx">build</span><span class="p">.</span><span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">er</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">if</span> <span class="p">(</span><span class="nx">er</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">er</span><span class="p">);</span>
+
+          <span class="nx">done</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
+          <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;done&#39;</span><span class="p">);</span>
+        <span class="p">});</span>
+      <span class="p">});</span>
+    <span class="p">});</span>
+  <span class="p">},</span> <span class="nx">emitter</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <h3>remove</h3>
+
+<ul>
+<li><code>options</code> object
+<ul><li><code>dir</code> directory to find sdks</li>
+<li><code>input</code> git hash or version to match</li></ul></li>
+<li><code>done</code> callback called with <code>(error)</code></li>
+</ul>
+
+<p>Removes sdks matching <code>input</code>. Returns an emitter which may emit <code>debug</code>
+and/or <code>log</code> events.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">remove</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">emitter</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+
+  <span class="nx">tsm</span><span class="p">.</span><span class="nx">findInstalled</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">options</span><span class="p">.</span><span class="nx">input</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">builds</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">builds</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;no matched builds&#39;</span><span class="p">));</span>
+    <span class="kd">var</span> <span class="nx">dirs</span> <span class="o">=</span> <span class="nx">builds</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">item</span><span class="p">.</span><span class="nx">dir</span><span class="p">;</span> <span class="p">});</span>
+    <span class="nx">async</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">dirs</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;deleting&#39;</span><span class="p">,</span> <span class="nx">item</span><span class="p">);</span>
+      <span class="nx">rimraf</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
+    <span class="p">},</span> <span class="nx">done</span><span class="p">);</span>
+  <span class="p">},</span> <span class="nx">emitter</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <h3>list</h3>
+
+<ul>
+<li><code>options</code> object, can have the following properties:
+<ul><li><code>os</code> string <em>required</em> os of builds, one of 'osx' 'linux' 'win32'</li>
+<li><code>installed</code> boolean, whether or not to include installed builds</li>
+<li><code>available</code> boolean, whether or not to include uninstalled builds</li>
+<li><code>dir</code> string, directory to look for installed builds</li>
+<li><code>input</code> string, git hash or version to match</li></ul></li>
+<li><code>done</code> callback called on completion with <code>(error, builds)</code></li>
+</ul>
+
+<p>The complete solution for listing builds. Returns an EventEmitter which will
+emit 'log' and 'debug' events.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">list</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">options</span><span class="p">.</span><span class="nx">os</span> <span class="o">!==</span> <span class="s1">&#39;string&#39;</span><span class="p">)</span> 
+    <span class="k">throw</span> <span class="k">new</span> <span class="nx">TypeError</span><span class="p">(</span><span class="s2">&quot;options.os is required&quot;</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">installed</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">options</span><span class="p">.</span><span class="nx">dir</span> <span class="o">!=</span> <span class="s1">&#39;string&#39;</span><span class="p">)</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nx">TypeError</span><span class="p">(</span><span class="s2">&quot;options.dir is required for options.installed&quot;</span><span class="p">);</span>
+
+  <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">emitter</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+
+  <span class="nx">async</span><span class="p">.</span><span class="nx">parallel</span><span class="p">({</span>
+    <span class="nx">installed</span><span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">installed</span><span class="p">)</span> <span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="p">[]);</span>
+      <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s2">&quot;Finding installed SDKs.&quot;</span><span class="p">);</span>
+        <span class="nx">tsm</span><span class="p">.</span><span class="nx">findInstalled</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">options</span><span class="p">.</span><span class="nx">input</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">emitter</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+
+    <span class="nx">available</span><span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">available</span><span class="p">)</span> <span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="p">[]);</span>
+      <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s2">&quot;Pulling available SDKs.&quot;</span><span class="p">);</span>
+        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;available&#39;</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+        <span class="nx">tsm</span><span class="p">.</span><span class="nx">getAllBuilds</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">input</span><span class="p">,</span> <span class="nx">options</span><span class="p">.</span><span class="nx">os</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">emitter</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="k">else</span> <span class="nx">done</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">tsm</span><span class="p">.</span><span class="nx">mergeBuilds</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">available</span><span class="p">,</span> <span class="nx">data</span><span class="p">.</span><span class="nx">installed</span><span class="p">));</span>
+  <span class="p">});</span>
+
+  <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <h3>builder</h3>
+
+<ul>
+<li><code>options</code> object
+<ul><li><code>dir</code> directory to find sdks</li>
+<li><code>input</code> git hash or version to match</li>
+<li><code>os</code> 'android' or 'iphone'</li>
+<li><code>args</code> array of arguments to pass to builder.py</li>
+<li><code>python</code> string, optional, path of python</li>
+<li><code>silent</code> boolean; if true, output will be supressed</li></ul></li>
+<li><code>done</code> callback to call when completed or upon error</li>
+</ul>
+
+<p>Runs the builder.py script for the specified <code>os</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">builder</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">emitter</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+  <span class="nx">options</span><span class="p">.</span><span class="nx">python</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">python</span> <span class="o">||</span> <span class="s1">&#39;python&#39;</span><span class="p">;</span>
+
+  <span class="nx">tsm</span><span class="p">.</span><span class="nx">findInstalled</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">options</span><span class="p">.</span><span class="nx">input</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">builds</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">builds</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span> <span class="p">(</span><span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;no matched builds&#39;</span><span class="p">));</span>
+    <span class="kd">var</span> <span class="nx">build</span> <span class="o">=</span> <span class="nx">builds</span><span class="p">.</span><span class="nx">pop</span><span class="p">();</span>
+
+    <span class="kd">var</span> <span class="nx">args</span> <span class="o">=</span> <span class="p">[</span><span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">build</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">options</span><span class="p">.</span><span class="nx">os</span><span class="p">,</span> <span class="s1">&#39;builder.py&#39;</span><span class="p">)];</span>
+    <span class="kd">var</span> <span class="nx">child</span> <span class="o">=</span> <span class="nx">spawn</span><span class="p">(</span><span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="nx">args</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">args</span> <span class="o">||</span> <span class="p">[]));</span>
+    <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;spawned&#39;</span><span class="p">,</span> <span class="nx">child</span><span class="p">);</span>
+
+    <span class="nx">child</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;exit&#39;</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">code</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">code</span> <span class="o">===</span> <span class="mi">0</span> <span class="o">||</span> <span class="nx">code</span> <span class="o">===</span> <span class="mi">255</span><span class="p">)</span>
+        <span class="nx">done</span><span class="p">();</span>
+      <span class="k">else</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">er</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;process exited with code: &quot;</span> <span class="o">+</span> <span class="nx">code</span><span class="p">);</span>
+        <span class="nx">er</span><span class="p">.</span><span class="nx">code</span> <span class="o">=</span> <span class="nx">code</span><span class="p">;</span>
+        <span class="nx">done</span><span class="p">(</span><span class="nx">er</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">});</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">silent</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">child</span><span class="p">.</span><span class="nx">stdout</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">stdout</span><span class="p">);</span>
+      <span class="nx">child</span><span class="p">.</span><span class="nx">stderr</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">stderr</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="nx">emitter</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <h3>titanium</h3>
+
+<ul>
+<li><code>options</code> object
+<ul><li><code>dir</code> directory to find sdks</li>
+<li><code>input</code> git hash or version to match</li>
+<li><code>args</code> array of arguments to pass to titanium.py</li>
+<li><code>python</code> string, optional, path of python</li>
+<li><code>silent</code> boolean; if true, output will be supressed</li></ul></li>
+<li><code>done</code> callback to call when completed or upon error</li>
+</ul>
+
+<p>Runs the titanium.py script </p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">titanium</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">emitter</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+  <span class="nx">options</span><span class="p">.</span><span class="nx">python</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">python</span> <span class="o">||</span> <span class="s1">&#39;python&#39;</span><span class="p">;</span>
+
+  <span class="nx">tsm</span><span class="p">.</span><span class="nx">findInstalled</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">options</span><span class="p">.</span><span class="nx">input</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">builds</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">builds</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span> <span class="p">(</span><span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;no matched builds&#39;</span><span class="p">));</span>
+    <span class="kd">var</span> <span class="nx">build</span> <span class="o">=</span> <span class="nx">builds</span><span class="p">.</span><span class="nx">pop</span><span class="p">();</span>
+
+    <span class="kd">var</span> <span class="nx">args</span> <span class="o">=</span> <span class="p">[</span><span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">build</span><span class="p">.</span><span class="nx">dir</span><span class="p">,</span> <span class="s1">&#39;titanium.py&#39;</span><span class="p">)];</span>
+    <span class="nx">args</span> <span class="o">=</span> <span class="nx">args</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">args</span> <span class="o">||</span> <span class="p">[]);</span>
+    <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s2">&quot;spawning: python &quot;</span> <span class="o">+</span> <span class="nx">args</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">child</span> <span class="o">=</span> <span class="nx">spawn</span><span class="p">(</span><span class="s1">&#39;python&#39;</span><span class="p">,</span> <span class="nx">args</span><span class="p">);</span>
+    <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;spawned&#39;</span><span class="p">,</span> <span class="nx">child</span><span class="p">);</span>
+
+    <span class="nx">child</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;exit&#39;</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">code</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">code</span> <span class="o">===</span> <span class="mi">0</span> <span class="o">||</span> <span class="nx">code</span> <span class="o">===</span> <span class="mi">255</span><span class="p">)</span>
+        <span class="nx">done</span><span class="p">();</span>
+      <span class="k">else</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">er</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;process exited with code: &quot;</span> <span class="o">+</span> <span class="nx">code</span><span class="p">);</span>
+        <span class="nx">er</span><span class="p">.</span><span class="nx">code</span> <span class="o">=</span> <span class="nx">code</span><span class="p">;</span>
+        <span class="nx">done</span><span class="p">(</span><span class="nx">er</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">});</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">silent</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">child</span><span class="p">.</span><span class="nx">stdout</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">stdout</span><span class="p">);</span>
+      <span class="nx">child</span><span class="p">.</span><span class="nx">stderr</span><span class="p">.</span><span class="nx">pipe</span><span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">stderr</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">},</span> <span class="nx">emitter</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <h2>Helper functions</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">branchesURL</span> <span class="o">=</span> 
+  <span class="s1">&#39;http://builds.appcelerator.com.s3.amazonaws.com/mobile/branches.json&#39;</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">branchURL</span> <span class="o">=</span> 
+  <span class="s1">&#39;http://builds.appcelerator.com.s3.amazonaws.com/mobile/$BRANCH/index.json&#39;</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>zipURL needs branch/zipname added to it</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">zipURL</span> <span class="o">=</span> <span class="s1">&#39;http://builds.appcelerator.com.s3.amazonaws.com/mobile/&#39;</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h3>gitCheck</h3>
+
+<ul>
+<li><code>input</code> some partial hash</li>
+<li><code>revision</code> some git revision hash</li>
+</ul>
+
+<p>Checks to see if the given input matches the given hash</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">gitCheck</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="nx">revision</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">input</span> <span class="o">&amp;&amp;</span> <span class="nx">input</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="nx">revision</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">input</span><span class="p">)</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+  <span class="k">else</span> <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <h3>getBranches</h3>
+
+<ul>
+<li><code>done</code> callback to be called when complete, passed <code>(error, data)</code></li>
+</ul>
+
+<p>Gets a list of branches from Appcelerator, formatted as an array of strings</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">getBranches</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">request</span><span class="p">(</span><span class="nx">branchesURL</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">throw</span> <span class="nx">error</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">statusCode</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">)</span> 
+        <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;HTTP &quot;</span> <span class="o">+</span> <span class="nx">response</span><span class="p">.</span><span class="nx">statusCode</span><span class="p">);</span>
+
+      <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">body</span><span class="p">).</span><span class="nx">branches</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">data</span><span class="p">)</span> <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;got malformed response from appcelerator&quot;</span><span class="p">);</span>
+
+      <span class="nx">done</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">data</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span> <span class="nx">done</span><span class="p">(</span><span class="nx">e</span><span class="p">);</span> <span class="p">}</span>
+  <span class="p">});</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <h3>parseDate</h3>
+
+<ul>
+<li><code>dateStr</code> string to parse date out of</li>
+</ul>
+
+<p>Parses dates from the strange way Appcelerator chooses to format them.
+Returns a date object.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">parseDate</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">dateStr</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">date</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">();</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <p>date parsing code stolen right off of builds.appcelerator.net</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nx">date</span><span class="p">.</span><span class="nx">setFullYear</span><span class="p">(</span>
+    <span class="nx">dateStr</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="nx">dateStr</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nx">dateStr</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">8</span><span class="p">));</span>
+  <span class="nx">date</span><span class="p">.</span><span class="nx">setHours</span><span class="p">(</span><span class="nx">dateStr</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">));</span>
+  <span class="nx">date</span><span class="p">.</span><span class="nx">setMinutes</span><span class="p">(</span><span class="nx">dateStr</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">12</span><span class="p">));</span>
+  <span class="nx">date</span><span class="p">.</span><span class="nx">setSeconds</span><span class="p">(</span><span class="nx">dateStr</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">14</span><span class="p">));</span>
+
+  <span class="k">return</span> <span class="nx">date</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <h3>parseBuildList</h3>
+
+<ul>
+<li><code>input</code> version or git hash to match against builds, can be falsy</li>
+<li><code>os</code> should be 'linux' or 'osx' or 'win32'</li>
+<li><code>builds</code> array of builds to parse</li>
+</ul>
+
+<p>Parses a build list from appcelerator, matching only those builds we're
+interested in. Returns a list of builds formatted like:</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <pre><code>[
+  {
+    date: date object corresponding to build date,
+    version: version string like '2.2.0',
+    zip: zip url,
+    git_revision: git hash,
+    githash: short git hash (first 7 chars),
+    sha1: sha1 hash of file,
+    size: size in bytes,
+    git_branch: git branch name,
+    build_type: mobile or desktop,
+    filename: basename ie 'mobilesdk-2.2.0-version.zip',
+    build_url: jenkins url
+  },
+  ...
+]
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">parseBuildList</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="nx">os</span><span class="p">,</span> <span class="nx">builds</span><span class="p">,</span> <span class="nx">emitter</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">builds</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">item</span><span class="p">)</span> <span class="p">{</span> 
+    <span class="k">if</span> <span class="p">(</span><span class="nx">os</span> <span class="o">&amp;&amp;</span> <span class="nx">item</span><span class="p">.</span><span class="nx">filename</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">os</span><span class="p">)</span> <span class="o">===</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+
+    <span class="kd">var</span> <span class="nx">match</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <p>Parse out version from filename (without date on the end)</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">match</span> <span class="o">=</span> <span class="nx">item</span><span class="p">.</span><span class="nx">filename</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/[0-9]*\.[0-9]*\.[0-9]*/</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">Array</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">match</span><span class="p">))</span> <span class="nx">item</span><span class="p">.</span><span class="nx">version</span> <span class="o">=</span> <span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <p>Parse out date from filename </p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">match</span> <span class="o">=</span> <span class="nx">item</span><span class="p">.</span><span class="nx">filename</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/[0-9]{14}/</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">Array</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">match</span><span class="p">))</span> <span class="nx">item</span><span class="p">.</span><span class="nx">date</span> <span class="o">=</span> <span class="nx">tsm</span><span class="p">.</span><span class="nx">parseDate</span><span class="p">(</span><span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+
+    <span class="nx">item</span><span class="p">.</span><span class="nx">zip</span> <span class="o">=</span> <span class="nx">zipURL</span> <span class="o">+</span> <span class="nx">item</span><span class="p">.</span><span class="nx">git_branch</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nx">item</span><span class="p">.</span><span class="nx">filename</span><span class="p">;</span>
+    <span class="nx">item</span><span class="p">.</span><span class="nx">githash</span> <span class="o">=</span> <span class="nx">item</span><span class="p">.</span><span class="nx">git_revision</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <p>Ignore invalid builds. Shouldn't fail unless they change something..</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">item</span><span class="p">.</span><span class="nx">version</span> <span class="o">||</span> <span class="o">!</span><span class="nx">item</span><span class="p">.</span><span class="nx">date</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">emitter</span><span class="p">)</span> <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span>
+        <span class="s1">&#39;warn&#39;</span><span class="p">,</span> 
+        <span class="s2">&quot;couldn&#39;t parse version or date from filename: &quot;</span> <span class="o">+</span> <span class="nx">item</span><span class="p">.</span><span class="nx">filename</span>
+      <span class="p">);</span>
+      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kd">var</span> <span class="nx">satisfied</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">input</span><span class="p">)</span> <span class="nx">satisfied</span> <span class="o">=</span> <span class="p">(</span>
+      <span class="nx">semver</span><span class="p">.</span><span class="nx">satisfies</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">version</span><span class="p">,</span> <span class="nx">input</span><span class="p">)</span> <span class="o">||</span> 
+      <span class="nx">tsm</span><span class="p">.</span><span class="nx">gitCheck</span><span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="nx">item</span><span class="p">.</span><span class="nx">git_revision</span><span class="p">)</span>
+    <span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <p>If there's no input, or if there is input and it was satisfied, this
+item 'passes'</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">input</span> <span class="o">||</span> <span class="p">(</span><span class="nx">input</span> <span class="o">&amp;&amp;</span> <span class="nx">satisfied</span><span class="p">))</span> <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+  <span class="p">});</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <h3>getBuilds</h3>
+
+<ul>
+<li><code>branch</code> branch to get builds for</li>
+<li><code>done</code> callback function called with <code>(error, builds)</code></li>
+</ul>
+
+<p>Get the list of builds for a particular branch</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">getBuilds</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">branch</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">url</span> <span class="o">=</span> <span class="nx">branchURL</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="s1">&#39;$BRANCH&#39;</span><span class="p">,</span> <span class="nx">branch</span><span class="p">);</span>
+  <span class="nx">request</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">response</span><span class="p">,</span> <span class="nx">body</span><span class="p">)</span> <span class="p">{</span> 
+    <span class="k">try</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">throw</span> <span class="nx">error</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">statusCode</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">)</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s2">&quot;got http &quot;</span> <span class="o">+</span> <span class="nx">response</span><span class="p">.</span><span class="nx">statusCode</span><span class="p">);</span>
+      <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">body</span><span class="p">);</span>
+      <span class="nx">done</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">data</span><span class="p">);</span>
+    <span class="p">}</span> 
+    
+    <span class="k">catch</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span> <span class="nx">done</span><span class="p">(</span><span class="nx">e</span><span class="p">);</span> <span class="p">}</span>
+  <span class="p">});</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <h3>getAllBuilds</h3>
+
+<ul>
+<li><code>input</code> git hash or version to match</li>
+<li><code>os</code> os to match, should be 'linux' or 'osx' or 'win32'</li>
+<li><code>done</code> callback function, called with <code>(error, builds)</code></li>
+</ul>
+
+<p>Gets all builds matching the input query.  Input can be undefined in which
+case we return all builds.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">getAllBuilds</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="nx">os</span><span class="p">,</span> <span class="nx">done</span><span class="p">,</span> <span class="nx">emitter</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">emitter</span> <span class="o">=</span> <span class="nx">emitter</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+
+  <span class="nx">tsm</span><span class="p">.</span><span class="nx">getBranches</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">branches</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">async</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span><span class="nx">branches</span><span class="p">,</span> <span class="p">[],</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">memo</span><span class="p">,</span> <span class="nx">item</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;debug&#39;</span><span class="p">,</span> <span class="s2">&quot;retrieving builds for branch: &quot;</span> <span class="o">+</span> <span class="nx">item</span><span class="p">);</span>
+
+      <span class="nx">tsm</span><span class="p">.</span><span class="nx">getBuilds</span><span class="p">(</span><span class="nx">item</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">builds</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="nx">callback</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+        <span class="k">else</span> <span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">memo</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="nx">builds</span><span class="p">));</span>
+      <span class="p">});</span>
+    <span class="p">},</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">result</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <p>Sort and return</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+
+      <span class="nx">result</span> <span class="o">=</span> <span class="nx">tsm</span><span class="p">.</span><span class="nx">parseBuildList</span><span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="nx">os</span><span class="p">,</span> <span class="nx">result</span><span class="p">);</span>
+      <span class="nx">result</span><span class="p">.</span><span class="nx">sort</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">a</span><span class="p">.</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">-</span> <span class="nx">b</span><span class="p">.</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTime</span><span class="p">();</span>
+      <span class="p">});</span>
+
+      <span class="nx">done</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">result</span><span class="p">);</span>
+    <span class="p">});</span>
+  <span class="p">});</span>
+
+  <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <h3>parseVersionFile</h3>
+
+<ul>
+<li><code>data</code> version file text </li>
+</ul>
+
+<p>Parses the text of a version.txt file and returns it</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">parseVersionFile</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nx">data</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;\n&#39;</span><span class="p">).</span><span class="nx">reduce</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">memo</span><span class="p">,</span> <span class="nx">item</span><span class="p">)</span> <span class="p">{</span> 
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">item</span><span class="p">)</span> <span class="k">return</span> <span class="nx">memo</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <p>remove /r characters which may be present on windows</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">item</span> <span class="o">=</span> <span class="nx">item</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/\r/g</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">);</span>
+    <span class="nx">item</span> <span class="o">=</span> <span class="nx">item</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">);</span>
+    <span class="nx">memo</span><span class="p">[</span><span class="nx">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="nx">item</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+    <span class="k">return</span> <span class="nx">memo</span><span class="p">;</span>
+  <span class="p">},</span> <span class="p">{});</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-25">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-25">&#182;</a>               </div>               <h3>examineDir</h3>
+
+<ul>
+<li><code>dir</code> directory to examine</li>
+<li><code>done</code> callback called with <code>(error, data)</code></li>
+</ul>
+
+<p>Tries to get the version.txt file in a directory.  If it isn't found or it
+doesn't appear to have the correct properties, an error is returned.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">examineDir</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">dir</span><span class="p">,</span> <span class="s1">&#39;version.txt&#39;</span><span class="p">),</span> <span class="s1">&#39;utf8&#39;</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="nx">data</span> <span class="o">=</span> <span class="nx">tsm</span><span class="p">.</span><span class="nx">parseVersionFile</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">data</span><span class="p">.</span><span class="nx">githash</span> <span class="o">||</span> <span class="o">!</span><span class="nx">data</span><span class="p">.</span><span class="nx">version</span> <span class="o">||</span> <span class="o">!</span><span class="nx">data</span><span class="p">.</span><span class="nx">timestamp</span><span class="p">)</span>
+      <span class="nx">done</span><span class="p">(</span><span class="k">new</span> <span class="nx">SyntaxError</span><span class="p">(</span><span class="s1">&#39;dir does not appear to contain a valid sdk&#39;</span><span class="p">));</span>
+    <span class="k">else</span> <span class="nx">done</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">data</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-26">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-26">&#182;</a>               </div>               <h3>findInstalled</h3>
+
+<ul>
+<li><code>dir</code> directory to examine</li>
+<li><code>input</code> git hash or version to match</li>
+<li><code>done</code> callback function, called with <code>(error, builds)</code></li>
+</ul>
+
+<p>Finds installed versions. Returns an emitter which may emit 'debug' and 'log'
+events.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">findInstalled</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">input</span><span class="p">,</span> <span class="nx">done</span><span class="p">,</span> <span class="nx">emitter</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">emitter</span> <span class="o">=</span> <span class="nx">emitter</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+  <span class="nx">fs</span><span class="p">.</span><span class="nx">readdir</span><span class="p">(</span><span class="nx">dir</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">versions</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+    <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="s2">&quot;examining directories: &quot;</span> <span class="o">+</span> <span class="nx">versions</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">));</span>
+    <span class="nx">async</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span><span class="nx">versions</span><span class="p">,</span> <span class="p">[],</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">memo</span><span class="p">,</span> <span class="nx">version</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">tsm</span><span class="p">.</span><span class="nx">examineDir</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">version</span><span class="p">),</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">build</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">memo</span><span class="p">);</span>
+
+        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="s2">&quot;got data for version: &quot;</span> <span class="o">+</span> <span class="nx">version</span><span class="p">);</span>
+
+        <span class="kd">var</span> <span class="nx">satisfied</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">input</span><span class="p">)</span> <span class="nx">satisfied</span> <span class="o">=</span> <span class="p">(</span>
+          <span class="nx">semver</span><span class="p">.</span><span class="nx">satisfies</span><span class="p">(</span><span class="nx">build</span><span class="p">.</span><span class="nx">version</span><span class="p">,</span> <span class="nx">input</span><span class="p">)</span> <span class="o">||</span> 
+          <span class="nx">tsm</span><span class="p">.</span><span class="nx">gitCheck</span><span class="p">(</span><span class="nx">input</span><span class="p">,</span> <span class="nx">build</span><span class="p">.</span><span class="nx">githash</span><span class="p">)</span>
+        <span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">input</span> <span class="o">||</span> <span class="p">(</span><span class="nx">input</span> <span class="o">&amp;&amp;</span> <span class="nx">satisfied</span><span class="p">))</span> <span class="p">{</span>
+          <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;debug&quot;</span><span class="p">,</span> <span class="nx">version</span> <span class="o">+</span> <span class="s2">&quot; satisfies, returning it&quot;</span><span class="p">);</span>
+          <span class="nx">memo</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+            <span class="nx">githash</span><span class="o">:</span> <span class="nx">build</span><span class="p">.</span><span class="nx">githash</span><span class="p">,</span>
+            <span class="nx">version</span><span class="o">:</span> <span class="nx">build</span><span class="p">.</span><span class="nx">version</span><span class="p">,</span>
+            <span class="nx">date</span><span class="o">:</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">(</span><span class="nx">build</span><span class="p">.</span><span class="nx">timestamp</span><span class="p">),</span>
+            <span class="nx">dir</span><span class="o">:</span> <span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">dir</span><span class="p">,</span> <span class="nx">version</span><span class="p">)</span>
+          <span class="p">});</span>
+        <span class="p">}</span>
+
+        <span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">memo</span><span class="p">);</span>
+      <span class="p">});</span>
+    <span class="p">},</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="k">return</span> <span class="nx">done</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+
+      <span class="nx">data</span><span class="p">.</span><span class="nx">sort</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">a</span><span class="p">.</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">-</span> <span class="nx">b</span><span class="p">.</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTime</span><span class="p">();</span>
+      <span class="p">});</span>
+      <span class="nx">done</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">data</span><span class="p">);</span>
+    <span class="p">});</span>
+  <span class="p">});</span>
+  <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-27">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-27">&#182;</a>               </div>               <h3>mergeBuilds</h3>
+
+<ul>
+<li><code>available</code> uninstalled but available builds</li>
+<li><code>installed</code> builds assumed to already be on the user's system</li>
+</ul>
+
+<p>Merges one list of available builds and one list of installed builds</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">mergeBuilds</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">available</span><span class="p">,</span> <span class="nx">installed</span><span class="p">)</span> <span class="p">{</span></pre></div>             </td>           </tr>                               <tr id="section-28">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-28">&#182;</a>               </div>               <p>Setup a mapping of git hashes to build objects.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="kd">var</span> <span class="nx">installedByHash</span> <span class="o">=</span> <span class="p">{};</span>
+  <span class="nx">installed</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">build</span><span class="p">)</span> <span class="p">{</span> 
+    <span class="nx">installedByHash</span><span class="p">[</span><span class="nx">build</span><span class="p">.</span><span class="nx">githash</span><span class="p">]</span> <span class="o">=</span> <span class="nx">build</span><span class="p">;</span> 
+  <span class="p">});</span></pre></div>             </td>           </tr>                               <tr id="section-29">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-29">&#182;</a>               </div>               <p>We'll loop over the available builds and delete builds from the
+installedByHash object when we encounter them. That way, any builds not
+present in the installed list but present in the available list will still
+be in the installedByHash object at the end and we can simply drop those
+on the end of the available list and return it.</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="nx">available</span> <span class="o">=</span> <span class="nx">available</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">build</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">installedByHash</span><span class="p">[</span><span class="nx">build</span><span class="p">.</span><span class="nx">githash</span><span class="p">])</span> <span class="nx">build</span><span class="p">.</span><span class="nx">installed</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="k">else</span> <span class="nx">build</span><span class="p">.</span><span class="nx">installed</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+
+    <span class="k">delete</span> <span class="nx">installedByHash</span><span class="p">[</span><span class="nx">build</span><span class="p">.</span><span class="nx">githash</span><span class="p">];</span>
+    <span class="k">return</span> <span class="nx">build</span><span class="p">;</span>
+  <span class="p">});</span>
+
+  <span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">installedByHash</span><span class="p">).</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">hash</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">build</span> <span class="o">=</span> <span class="nx">installedByHash</span><span class="p">[</span><span class="nx">hash</span><span class="p">];</span>
+    <span class="nx">build</span><span class="p">.</span><span class="nx">installed</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="nx">available</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">build</span><span class="p">);</span>
+  <span class="p">});</span>
+
+  <span class="nx">available</span><span class="p">.</span><span class="nx">sort</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">a</span><span class="p">,</span> <span class="nx">b</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">a</span><span class="p">.</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">-</span> <span class="nx">b</span><span class="p">.</span><span class="nx">date</span><span class="p">.</span><span class="nx">getTime</span><span class="p">();</span>
+  <span class="p">});</span>
+
+  <span class="k">return</span> <span class="nx">available</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">var</span> <span class="nx">oldexec</span> <span class="o">=</span> <span class="nx">exec</span><span class="p">;</span>
+<span class="nx">exec</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">what</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+   <span class="nx">oldexec</span><span class="p">(</span><span class="nx">what</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-30">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-30">&#182;</a>               </div>               <h3>unzip</h3>
+
+<ul>
+<li><code>zip</code> zip file to extract</li>
+<li><code>output</code> output directory</li>
+<li><code>done</code> callback</li>
+</ul>
+
+<p>Extracts some zip. Should work on windows and any platform that has unzip.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">tsm</span><span class="p">.</span><span class="nx">unzip</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">zip</span><span class="p">,</span> <span class="nx">output</span><span class="p">,</span> <span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">platform</span> <span class="o">==</span> <span class="s1">&#39;win32&#39;</span><span class="p">)</span>
+    <span class="nx">exec</span><span class="p">(</span><span class="s2">&quot;\&quot;&quot;</span> <span class="o">+</span> <span class="nx">__dirname</span> <span class="o">+</span> <span class="s2">&quot;\\7za.exe\&quot; x -y \&quot;&quot;</span> <span class="o">+</span> <span class="nx">zip</span> <span class="o">+</span> <span class="s2">&quot;\&quot; -o\&quot;&quot;</span> <span class="o">+</span> <span class="nx">output</span> <span class="o">+</span> <span class="s2">&quot;\&quot;&quot;</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+  <span class="k">else</span>
+    <span class="nx">exec</span><span class="p">(</span><span class="s2">&quot;unzip -oqq &#39;&quot;</span> <span class="o">+</span> <span class="nx">zip</span> <span class="o">+</span> <span class="s2">&quot;&#39; -d &#39;&quot;</span> <span class="o">+</span> <span class="nx">output</span> <span class="o">+</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="nx">done</span><span class="p">);</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
