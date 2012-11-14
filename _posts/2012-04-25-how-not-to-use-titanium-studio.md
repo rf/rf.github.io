@@ -6,6 +6,11 @@ tags: []
 ---
 {% include JB/setup %}
 
+*note: this tutorial describes how to use the original Python build scripts
+that studio uses. There is a new 
+[cli interface for Titanium](https://github.com/appcelerator/titanium). Check
+it out if you're interested in developing on the command line.*
+
 This is a tutorial for those who are frightened by the bloat of Titanium Studio
 and would rather use the python scripts directly.  It would help if [you use my
 tool, `tsm`, to manage your Titanium SDK versions](https://github.com/russfrank/tsm);
