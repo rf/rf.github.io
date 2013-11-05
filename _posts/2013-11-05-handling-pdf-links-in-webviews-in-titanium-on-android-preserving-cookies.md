@@ -30,12 +30,16 @@ also requires a bit of code to download the PDF, move it to a temporary
 directory (since a PDF reader app can't access your app's data directory), and
 launch the intent.
 
-The code I wrote is available in this gist: https://gist.github.com/rf/7326196
+The code I wrote is [available in this gist.](https://gist.github.com/rf/7326196)
+
 To use it:
 
   1. Apply the diff at the bottom to a copy of the Titanium SDK source.
+
   2. Compile the Titanium SDK and install it.
+
   3. Copy the `pdf.js` code into your project.
+
   4. Add the event listener to your webviews for the event `pdf` and use 
      the `pdf.js` code to handle it, as seen in the example.
 
