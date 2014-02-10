@@ -16,7 +16,7 @@ University, where I write the Rutgers Mobile app for iPhones, iPads, and
 Android devices. I'm also an undergraduate student at Rutgers studying 
 computer science.
 
-Resume: [pdf](assets/resume.pdf)
+Resume: [pdf](assets/resume-new.pdf)
 
 -------
 
