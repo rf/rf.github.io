@@ -50,6 +50,11 @@ Resume: [pdf](assets/resume-new.pdf)
     Music
   </a>
 
+  <a class="project" href="projects/tsm.html">
+    <img src="projects/tsm_thumb.png"/>
+    tsm
+  </a>
+
   <a class="project" href="projects/essay-beefer.html">
     <img src="projects/essay_beefer_thumb.png"/>
     Essay Beefer
