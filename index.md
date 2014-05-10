@@ -4,19 +4,88 @@ title: Hi, I'm Russ.
 ---
 {% include JB/setup %}
 
-<div style="float:right;text-align:center">
+<div style="float:right;text-align:center;display:inline-block;">
 <img src="assets/me.jpg" class="me well" />
 <br>
 <a href="http://twitter.com/#!/russjf" class="zocial icon twitter" style="margin:5px;">twitter</a>
 <a href="http://github.com/rf" class="zocial icon github" style="margin:5px;">github</a>
 </div>
 
-I'm a software engineer from New Jersey. Currently I'm employed by Rutgers 
-University, where I write the Rutgers Mobile app for iPhones, iPads, and 
-Android devices. I'm also an undergraduate student at Rutgers studying 
-computer science.
+I'm a mobile, web, and backend developer from New Jersey. I'm currently interning
+at Uber in San Fransisco.
+
+I specialize in creating mobile experiences that are consistent across multiple
+platforms utilizing whatever technology is necessary to do so, whether that be
+HTML5, Titanium, or native code.
+
+I'm currently looking for new contracting clients. If you need a web or mobile
+solution, or if you're looking for someone proficient in Node.js, Titanium, or
+Javascript, shoot me an email: [me@russfrank.us](mailto:me@russfrank.us).
 
 Resume: [pdf](assets/resume-new.pdf)
+
+<div class="clear"></div>
+
+-------
+
+<div id="projects">
+
+  <a class="project" href="projects/rutgers-mobile-app.html">
+    <img src="projects/mobile_thumb.png"/>
+    Rutgers Mobile App
+  </a>
+
+  <a class="project" href="projects/nd.html">
+    <img src="projects/nd_thumb.png"/>
+    nd
+  </a>
+
+  <a class="project" href="projects/snapchan.html">
+    <img src="projects/snapchan_thumb.png"/>
+    Snapchan
+  </a>
+
+  <a class="project" href="projects/music.html">
+    <img src="projects/music_thumb.png"/>
+    Music
+  </a>
+
+  <a class="project" href="projects/essay-beefer.html">
+    <img src="projects/essay_beefer_thumb.png"/>
+    Essay Beefer
+  </a>
+
+  <a class="project" href="projects/cheapchap.html">
+    <img src="projects/cheapchap_thumb.png"/>
+    Cheapchap
+  </a>
+
+  <a class="project" href="projects/runr.html">
+    <img src="projects/runr_thumb.png"/>
+    Runr
+  </a>
+
+  <a class="project" href="projects/keeno.html">
+    <img src="projects/keeno_thumb.png"/>
+    Keeno
+  </a>
+
+  <a class="project" href="projects/mockti.html">
+    <img src="projects/mockti_thumb.png"/>
+    MockTi
+  </a>
+
+  <a class="project" href="projects/nextbusjs.html">
+    <img src="projects/nextbusjs_thumb.png"/>
+    NextbusJS 
+  </a>
+
+  <a class="project" href="projects/moar.html">
+    <img src="projects/moar_thumb.png"/>
+    Moar 
+  </a>
+
+</div>
 
 -------
 
