@@ -40,6 +40,11 @@ Resume: [pdf](assets/resume-new.pdf)
     nd
   </a>
 
+  <a class="project" href="projects/hackru.html">
+    <img src="projects/hackru_thumb.png"/>
+    HackRU
+  </a>
+
   <a class="project" href="projects/snapchan.html">
     <img src="projects/snapchan_thumb.png"/>
     Snapchan
