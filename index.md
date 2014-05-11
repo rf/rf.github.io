@@ -45,6 +45,11 @@ Resume: [pdf](assets/resume-new.pdf)
     Snapchan
   </a>
 
+  <a class="project" href="projects/renderizer.html">
+    <img src="projects/renderizer_thumb.png"/>
+    Renderizer
+  </a>
+
   <a class="project" href="projects/music.html">
     <img src="projects/music_thumb.png"/>
     Music
