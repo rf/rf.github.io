@@ -4,6 +4,8 @@ title: "CheapChap"
 ---
 {% include JB/setup %}
 
+*php, html/css, javascript*
+
 CheapChap sets you up with an affordable date solution for you and your date.
 Your date may not be happy, but your wallet will be!
 

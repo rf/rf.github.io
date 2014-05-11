@@ -4,6 +4,8 @@ title: "Rutgers Mobile App"
 ---
 {% include JB/setup %}
 
+*titanium javascript, node javascript, php*
+
 The Rutgers Mobile App was my main project at Rutgers University, where I was
 employed full time from 2012 - 2014. The app was written using Appcelerator
 Titanium, which allowed us to deploy to both iOS and Android within a

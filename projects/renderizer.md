@@ -4,6 +4,8 @@ title: Renderizer
 ---
 {% include JB/setup %}
 
+*python*
+
 Renderizer is a Titanium build plugin that automates image rendering. It can
 drive Adobe Illustrator or Inkscape. Given a `images.yaml` configuration file,
 it can render images depending on the platform you're currently building for

@@ -4,6 +4,8 @@ title: "Music"
 ---
 {% include JB/setup %}
 
+*php, javascript*
+
 Music was an app for the Facebook platform that allowed users to place a box
 on their profile containing a music player. I worked on it in high school with
 [Steven Lu](http://stevenlu.com) around the summer of 2008. It was one of the

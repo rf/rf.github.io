@@ -4,6 +4,8 @@ title: "Essay Beefer"
 ---
 {% include JB/setup %}
 
+*codeigniter php, html/css, javascript*
+
 Essay Beefer was a hackathon project at HackNY Spring 2012. It takes an essay
 and tries to 'beef it up' by finding relevant articles and inserting in
 quotes and citations and by finding related pictures and inserting them into

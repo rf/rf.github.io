@@ -4,6 +4,8 @@ title: "tsm"
 ---
 {% include JB/setup %}
 
+*node.js javascript*
+
 tsm is an SDK manager for Appcelerator Titanium. It can pull down and extract
 the precompiled sdk builds available from Appcelerator's CI setup.
 

@@ -50,6 +50,11 @@ Resume: [pdf](assets/resume-new.pdf)
     Renderizer
   </a>
 
+  <a class="project" href="projects/hackfsu.html">
+    <img src="projects/hackfsu_thumb.png"/>
+    HackFSU
+  </a>
+
   <a class="project" href="projects/music.html">
     <img src="projects/music_thumb.png"/>
     Music
@@ -88,6 +93,11 @@ Resume: [pdf](assets/resume-new.pdf)
   <a class="project" href="projects/nextbusjs.html">
     <img src="projects/nextbusjs_thumb.png"/>
     NextbusJS 
+  </a>
+
+  <a class="project" href="projects/trollnet.html">
+    <img src="projects/trollnet_thumb.png"/>
+    Trollnet 
   </a>
 
   <a class="project" href="projects/moar.html">

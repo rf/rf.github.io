@@ -4,6 +4,8 @@ title: "Runr"
 ---
 {% include JB/setup %}
 
+*node.js javascript*
+
 Runr solves a slight variation of the "traveling salesman" problem -- where
 we need to visit 1 place of each of a few types. If you have a few errands to
 run, and you want to find the places to complete those errands that are nearby
