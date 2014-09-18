@@ -11,14 +11,16 @@ title: Hi, I'm Russ.
 <a href="http://github.com/rf" class="zocial icon github" style="margin:5px;">github</a>
 </div>
 
-I'm a mobile, web, and backend developer from New Jersey. I'm currently interning
-at Uber in San Fransisco.
+I really like writing programs. I studied Computer Science at Rutgers, where
+I also worked for a few years; mostly on the 
+<a href="projects/rutgers-mobile-app.html">Rutgers Mobile App</a>. Now I work
+for Uber.
 
-I specialize in creating mobile experiences that are consistent across multiple
-platforms utilizing whatever technology is necessary to do so, whether that be
-HTML5, Titanium, or native code.
+I also like to teach people things. You'll often times find me at hackathons,
+teaching people to write programs. I'm always trying to find new ways to be
+a better teacher.
 
-I'm currently looking for new contracting clients. If you need a web or mobile
+I'd love to help you build something. If you need a web or mobile
 solution, or if you're looking for someone proficient in Node.js, Titanium, or
 Javascript, shoot me an email: [me@russfrank.us](mailto:me@russfrank.us).
 
