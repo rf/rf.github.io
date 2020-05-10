@@ -5,26 +5,15 @@ title: Hi, I'm Russ.
 {% include JB/setup %}
 
 <div style="float:right;text-align:center;display:inline-block;">
-<img src="assets/me2.jpg" class="me well" />
+<img src="assets/me3.jpg" class="me well" />
 <br>
 <a href="http://twitter.com/#!/russjf" class="zocial icon twitter" style="margin:5px;">twitter</a>
 <a href="http://github.com/rf" class="zocial icon github" style="margin:5px;">github</a>
 </div>
 
-I really like writing programs. I studied Computer Science at Rutgers, where
-I also worked for a few years; mostly on the 
-<a href="projects/rutgers-mobile-app.html">Rutgers Mobile App</a>. Now I work
-for Uber.
-
-I also like to teach people things. You'll often times find me at hackathons,
-teaching people to write programs. I'm always trying to find new ways to be
-a better teacher.
-
-I'd love to help you build something. If you need a web or mobile
-solution, or if you're looking for someone proficient in Node.js, Titanium, or
-Javascript, shoot me an email: [me@russfrank.us](mailto:me@russfrank.us).
-
-Resume: [pdf](assets/resume-new.pdf)
+I'm a software engineer living in Brooklyn. I also make music, program live 
+lights, and cook. I'm currently helping people make things better at 
+<a href="http://oden.io/">Oden Technologies</a>.
 
 <div class="clear"></div>
 
