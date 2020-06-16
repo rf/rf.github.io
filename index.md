@@ -5,15 +5,22 @@ title: Hi, I'm Russ.
 {% include JB/setup %}
 
 <div style="float:right;text-align:center;display:inline-block;">
-<img src="assets/me3.jpg" class="me well" />
+<img width=400 height=400 src="assets/me3.jpg" class="me well" />
 <br>
 <a href="http://twitter.com/#!/russjf" class="zocial icon twitter" style="margin:5px;">twitter</a>
 <a href="http://github.com/rf" class="zocial icon github" style="margin:5px;">github</a>
 </div>
 
+<p>
 I'm a software engineer living in Brooklyn. I also make music, program live 
 lights, and cook. I'm currently helping people make things better at 
 <a href="http://oden.io/">Oden Technologies</a>.
+</p>
+
+<p>
+I also play several instruments and produce music with my band, 
+<a href="http://snacks.band">Snacks Chapman</a>.
+</p>
 
 <div class="clear"></div>
 
